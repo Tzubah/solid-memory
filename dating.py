@@ -102,4 +102,16 @@ def logout():
     
     Side effects:
         clears the global variable for current user
+        
+if __name__ == '__main__':
+     test_app = User
+     test_app.distance_from_match("Match")
+     test_app.age_match(True)
+     test_app.confirm_match()
+     test_app.request_match()
+     test_app.view_user(user)
+     test_app.search_keyword(keyword)
+     test_app.login()
+     test_app.logout()
+
     
