@@ -1,10 +1,9 @@
 class User:
     """A class representing a dating app user profile
     Attributes:
-        user_ID (int): unique ID for back-end data handling
-        accepted_matches (set of user IDs):
-        rejected_matches (set of user IDs)
-        pending_matches (set of user IDs): list of requested matches
+        accepted_matches (set of usernames):
+        rejected_matches (set of usernames)
+        pending_matches (set of usernames): list of requested matches
         new_matches (boolean): indicates new matches upon login
         name (string): user's full name
         age (int): user's age
@@ -14,6 +13,32 @@ class User:
         age_range (bottom int/top int)
         hobbies (list of strings)
     """
+    
+    def __init__(self, f_name, l_name, age, loc, gender, pref, hob):
+        self.accepted_matches = set()
+        self.rejected_matches = set()
+        self.pending_matches = set()
+        self.new_matches = False
+        
+        self.first_name = f_name
+        self.last_name = l_name
+        self.age = age
+        self.gender = gender
+        self.location = loc
+        self.preference = pref
+        #self.age_range = age_range
+        self.hobbies = hob
+        
+    def __str__(self):
+        # Formats hobbies to be printed line by line
+        hob_list = ""
+        for hob in hobbies:
+            hob_list += "\t" + hob + "\n"
+        
+        print(f"\n\nName: {self.first_name + ' ' + self.last_name}\t" + 
+              f"Age: {self.age}\t Gender: {self.gender}\t" + 
+              f"Preference: {self.preference}\nLikes:\n{hob_list}\n\n")
+        
     
     def distance_from_match(self, match):
         """Calculates the distance between this user and the match's location
@@ -26,15 +51,15 @@ class User:
         """
         
     
-    def age_match(self, match):
-        """Checks if matched user fits within the preferred age_range
-        
-        Args:
-            match (User): potential match
-            
-        Returns:
-            boolean: True if match is within preferred age range, False if not
-        """
+    #def age_match(self, match):
+    #    """Checks if matched user fits within the preferred age_range
+    #    
+    #    Args:
+    #        match (User): potential match
+    #        
+    #    Returns:
+    #        boolean: True if match is within preferred age range, False if not
+    #    """
     
     def confirm_match(self, match):
         """Prompts user to accept or reject a match
@@ -46,8 +71,8 @@ class User:
             str: on-screen prompt reflecting user's decision
             
         Side effects:
-            moves match.user_ID from pending_matches to either accepted_matches or 
-            rejected_matches, sets match's new_match attribute to 
+            moves match.user_ID from pending_matches to either accepted_matches 
+            or rejected_matches, sets match's new_match attribute to 
             True if accepted
         """
         
@@ -64,7 +89,80 @@ class User:
             on-screen prompt reflecting success of request
         """
         
+class Database():
+    """A class representing the collection of Users in the dating app
+    Attributes:
+        users (dict of tuples): username keys with tuple values of (password, 
+            User)
+    """
+    def __init__(self, filepath=None):
+        self.users = dict()
+        if (filepath):
+            with open(filepath, "r", encoding="utf-8") as csv:
+                for line in csv:
+                    u = line.strip().split()
+                    
+                    # Prevents duplicate usernames
+                    if self.user.get(u[0]) == None:
+                        hob = u[8].strip.split("; ")
+                        add_user(u[0],u[1],u[2],u[3],u[4],u[5],u[6],u[7],hob)                   
         
+    def add_user(self,u_name,pwd,f_name,l_name,age,loc,gender,pref,hob):
+        """Processes demographic information to add user to database
+        
+        Args:
+            u_name (str): account username
+            pwd (str): account password
+            f_name (str): user first name
+            l_name (str): user last name
+            age (int): user age
+            loc (str): user location
+            gender (str): user gender
+            pref (str): user sexual preference
+            hob (list of str): user hobbies
+        
+        Returns:
+            User: newly created User object
+        
+        Side effects:
+            creates new User object and adds to database
+        """
+        new_user = User(f_name,l_name,age,loc,gender,pref,hob)
+        self.users[u_name] = (pwd, new_user)
+        return new_user
+              
+        
+def create_profile(db):
+    """Prompts the user to fill in demographic information for a new account
+    
+    Args:
+        db (Database): database that stores Users and login information
+    
+    Returns:
+        User: newly created User object
+    
+    Side effects:
+        prints profile creation prompts to console
+    """
+    print("Create a new username and a password with 6 or more characters, " +
+          "and at least one uppercase letter, number, "
+          "and special character\n\n")
+    
+    while True:
+        u_name = input("Username: ")
+        if (db.users.get(u_name) != None):
+            print("That username already exists!")
+        else: break
+    
+    while True:
+        pwd = input("Password: ")
+        # ***NEEDS REGEX FOR PASSWORD REQUIREMENTS***
+        # else:
+        break
+    
+    # PROMPT AND CHECK FOR PROPER DEMOGRAPHIC INFO, INCLUDING
+    # INPUT FOR HOBBIES ONE AT A TIME
+
 def view_user(user):
     """View the demographic information of a single user
     
@@ -74,6 +172,7 @@ def view_user(user):
     Side efects:
         prints user's demographic attributes to console
     """
+    print(user)
     
 def search_keyword(keyword):
     """Searches user profiles for attributes containing keyword input
@@ -86,8 +185,10 @@ def search_keyword(keyword):
             keyword search
     """
     
-def login():
+def login(db):
     """Sets the current user
+    Args:
+        db ()
     
     Returns: 
         User: current user
@@ -96,12 +197,38 @@ def login():
         prompts user input for username and password, changes global variable 
         for current user
     """
+    username = ""
+    password = ""
+    while (db.users.get(username) == None):
+        username = input("Enter username: ")
+        if (db.user.get(username) == None):
+            print("Username not found\n")
+    user = db.users[username]        
+    
+    while (password != user[0]):
+        password = input("Enter password: ")
+        if (password != user[0]):
+            print("Incorrect password")
+    
+    return user[-1]
+    
     
 def logout():
     """Clears the current user
     
     Side effects:
         clears the global variable for current user
+    """
+    
+def main():
+    """Runs the dating app program
+    """
+    curr_user = None
+    print("Welcome to the 326 Console Dating App!\n\n")
+    print("Please enter 'login' to log in to your account or 'register' to" +
+          "create a new account")
+    u_command = input()
+    
         
 if __name__ == '__main__':
      test_app = User
