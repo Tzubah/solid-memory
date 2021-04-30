@@ -1,3 +1,7 @@
+import regex as re
+from geopy.geocoders import Nomanatim
+import datetime
+
 class User:
     """A class representing a dating app user profile
     Attributes:
@@ -6,6 +10,7 @@ class User:
         pending_matches (set of usernames): list of requested matches
         new_matches (boolean): indicates new matches upon login
         name (string): user's full name
+        date_of_birth (Date): user's birthday
         age (int): user's age
         location (string): user's address
         gender (string): user's gender
@@ -156,12 +161,67 @@ def create_profile(db):
     
     while True:
         pwd = input("Password: ")
-        # ***NEEDS REGEX FOR PASSWORD REQUIREMENTS***
+        # ***NEEDS TO CHECK FOR PASSWORD REQUIREMENTS (maybe regex)***
         # else:
         break
     
     # PROMPT AND CHECK FOR PROPER DEMOGRAPHIC INFO, INCLUDING
     # INPUT FOR HOBBIES ONE AT A TIME
+    
+    # Name
+    name_input = input("Enter your first and last name").split(" ")
+    l_name = name_input.pop()
+    f_name = " ".join(name_input)
+    
+    # Location/Address
+    loc_expr = r"""(?xm)
+                    (?P<address>\d{1,5}\s[^,\n]+) # address 1
+                    ,\s(?P<city>[A-Za-z'\s]+) # city
+                    ,\s(?P<state>[A-Z]{2}|[A-Za-z\s]+) # state
+                    ,?\s(?P<zipcode>\d{5}) # zipcode
+                    """
+    print("Enter your address as the following fields separated by commas:\n\t" +
+          "Street Address, City, State, Zipcode")
+    while True:
+        loc_input = re.search(loc_expr, input("Address: "))
+        if (loc_input):
+            loc = (loc_input.group("address") + ", " + 
+                    loc_input.group("city") + ", " + 
+                    loc_input.group("state") +
+                    loc_input.group("zipcode"))
+            break
+        else:
+            print("Invalid address format")
+            
+    # Age/Date of Birth
+    dob_expr = r"(?P<day>\d{2})/(?P<month>\d{2})/(?P<year>\d{4})"
+    print("Enter your date of birth as DD/MM/YYYY")
+    while True:
+        dob_input = re.search(dob_expr, input("Date of Birth: "))
+        if (dob_input):
+            try: 
+                dob = datetime.date(int(dob_input.group("year")), 
+                                    int(dob_input.group("month")),
+                                    int(dob_input.group("day")))
+                break
+            except ValueError:
+                print("Invalid date")
+        else:
+            print("Invalid date")
+    age = (datetime.date.today() - dob).days // 365
+    
+    # Gender - SOMEONE DO THIS
+    gender = "M"
+    
+    # Preference - SOMEONE DO THIS
+    pref = "F"
+    
+    # Hobbies - SOMEONE DO THIS
+    hob = []
+    
+    return db.add_user(u_name,pwd,f_name,l_name,age,loc,gender,pref,hob)
+    
+    
 
 def view_user(user):
     """View the demographic information of a single user
@@ -223,11 +283,14 @@ def logout():
 def main():
     """Runs the dating app program
     """
+    db = Database()
     curr_user = None
     print("Welcome to the 326 Console Dating App!\n\n")
     print("Please enter 'login' to log in to your account or 'register' to" +
           "create a new account")
     u_command = input()
+    if u_command.lower() == 'login':
+        curr_user = login(db)
     
         
 if __name__ == '__main__':
