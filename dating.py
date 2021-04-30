@@ -1,5 +1,8 @@
-import regex as re
-from geopy.geocoders import Nomanatim
+from argparse import ArgumentParser
+import sys
+import pandas as pd
+import re
+from geopy.geocoders import Nominatim
 import datetime
 
 class User:
@@ -9,7 +12,8 @@ class User:
         rejected_matches (set of usernames)
         pending_matches (set of usernames): list of requested matches
         new_matches (boolean): indicates new matches upon login
-        name (string): user's full name
+        first_name (str): user's first name
+        last_name (str): user's last name
         date_of_birth (Date): user's birthday
         age (int): user's age
         location (string): user's address
@@ -43,6 +47,14 @@ class User:
         print(f"\n\nName: {self.first_name + ' ' + self.last_name}\t" + 
               f"Age: {self.age}\t Gender: {self.gender}\t" + 
               f"Preference: {self.preference}\nLikes:\n{hob_list}\n\n")
+        
+    def get_name(self):
+        """Gets user's first and last name
+        
+        Returns:
+            str: user's first and last name
+        """
+        return f"{self.first_name} {self.last_name}"
         
     
     def distance_from_match(self, match):
@@ -105,12 +117,12 @@ class Database():
         if (filepath):
             with open(filepath, "r", encoding="utf-8") as csv:
                 for line in csv:
-                    u = line.strip().split()
+                    u = line.strip().split(",")
                     
                     # Prevents duplicate usernames
-                    if self.user.get(u[0]) == None:
-                        hob = u[8].strip.split("; ")
-                        add_user(u[0],u[1],u[2],u[3],u[4],u[5],u[6],u[7],hob)                   
+                    if self.users.get(u[0]) == None:
+                        hob = u[8].strip().split("; ")
+                        self.add_user(u[0],u[1],u[2],u[3],u[4],u[5],u[6],u[7],hob)                   
         
     def add_user(self,u_name,pwd,f_name,l_name,age,loc,gender,pref,hob):
         """Processes demographic information to add user to database
@@ -149,9 +161,10 @@ def create_profile(db):
     Side effects:
         prints profile creation prompts to console
     """
-    print("Create a new username and a password with 6 or more characters, " +
+    print("\n---REGISTRATION---")
+    print("\nCreate a new username and a password with 6 or more characters, " +
           "and at least one uppercase letter, number, "
-          "and special character\n\n")
+          "and special character\n")
     
     while True:
         u_name = input("Username: ")
@@ -169,7 +182,7 @@ def create_profile(db):
     # INPUT FOR HOBBIES ONE AT A TIME
     
     # Name
-    name_input = input("Enter your first and last name").split(" ")
+    name_input = input("\nEnter your first and last name: ").split(" ")
     l_name = name_input.pop()
     f_name = " ".join(name_input)
     
@@ -180,10 +193,10 @@ def create_profile(db):
                     ,\s(?P<state>[A-Z]{2}|[A-Za-z\s]+) # state
                     ,?\s(?P<zipcode>\d{5}) # zipcode
                     """
-    print("Enter your address as the following fields separated by commas:\n\t" +
+    print("\nEnter your address as the following fields separated by commas:\n\t" +
           "Street Address, City, State, Zipcode")
     while True:
-        loc_input = re.search(loc_expr, input("Address: "))
+        loc_input = re.search(loc_expr, input("\nAddress: "))
         if (loc_input):
             loc = (loc_input.group("address") + ", " + 
                     loc_input.group("city") + ", " + 
@@ -194,10 +207,10 @@ def create_profile(db):
             print("Invalid address format")
             
     # Age/Date of Birth
-    dob_expr = r"(?P<day>\d{2})/(?P<month>\d{2})/(?P<year>\d{4})"
-    print("Enter your date of birth as DD/MM/YYYY")
+    dob_expr = r"(?P<month>\d{2})/(?P<day>\d{2})/(?P<year>\d{4})"
+    print("\nEnter your date of birth as MM/DD/YYYY")
     while True:
-        dob_input = re.search(dob_expr, input("Date of Birth: "))
+        dob_input = re.search(dob_expr, input("\nDate of Birth: "))
         if (dob_input):
             try: 
                 dob = datetime.date(int(dob_input.group("year")), 
@@ -259,9 +272,10 @@ def login(db):
     """
     username = ""
     password = ""
+    print("\n---LOGIN---")
     while (db.users.get(username) == None):
         username = input("Enter username: ")
-        if (db.user.get(username) == None):
+        if (db.users.get(username) == None):
             print("Username not found\n")
     user = db.users[username]        
     
@@ -280,28 +294,73 @@ def logout():
         clears the global variable for current user
     """
     
-def main():
+def main(user_list=None):
     """Runs the dating app program
     """
-    db = Database()
+    db = Database(user_list)
     curr_user = None
-    print("Welcome to the 326 Console Dating App!\n\n")
-    print("Please enter 'login' to log in to your account or 'register' to" +
-          "create a new account")
-    u_command = input()
-    if u_command.lower() == 'login':
-        curr_user = login(db)
+    u_command = ""
     
+    # Welcome screen - login, register, or exit
+    print("\n\n\n---WELCOME TO THE INST326 CONSOLE DATING APP!---")
+    while (u_command not in ['login','register','quit']):
+        print("\n'login' - log in to your account" + 
+                "\n'register' - create a new account" + 
+                "\n'quit' - exits program")
         
+        u_command = input().lower()
+        if u_command == 'login':
+            curr_user = login(db)
+            break
+        if u_command == 'register':
+            curr_user = create_profile(db)
+            break
+        if u_command == 'quit':
+            return
+    
+    u_command = ""
+    print(f"\n\nWelcome, {curr_user.get_name()}!" + 
+          ("You have new matches" if curr_user.new_matches else ""))
+    print("\n'quit' - exits program")
+    
+    # Main Menu - search, logout, exit
+    # THIS LOOP WILL INCLUDE ALL POSSIBLE USER COMMANDS FROM MAIN MENU
+    while (u_command not in ['quit']):
+        u_command = input().lower()
+        if u_command == 'quit':
+            return
+    
+def parse_args(arglist):
+    """Parse command-line arguments.
+    
+    Expect one optional argument, a path to a comma-delimited file containing
+    user profile information to establish existing data. 
+   
+    Args:
+        arglist (list of str): arguments from the command line.
+    
+    Returns:
+        namespace: the parsed arguments, as a namespace.
+    """
+    parser = ArgumentParser()
+    parser.add_argument("-u", "--user_list", help="optional comma-delimited"
+                        " file containing user profile information to establish"
+                        " existing data")
+    
+    return parser.parse_args(arglist)  
+
 if __name__ == '__main__':
-     test_app = User
-     test_app.distance_from_match("Match")
-     test_app.age_match(True)
-     test_app.confirm_match()
-     test_app.request_match()
-     test_app.view_user(user)
-     test_app.search_keyword(keyword)
-     test_app.login()
-     test_app.logout()
+    args = parse_args(sys.argv[1:])
+    main(args.user_list)
+     
+     #test_app = User
+     #test_app.distance_from_match("Match")
+     #test_app.age_match(True)
+     #test_app.confirm_match()
+     #test_app.request_match()
+     #test_app.view_user(user)
+     #test_app.search_keyword(keyword)
+     #test_app.login()
+     #test_app.logout()"""
 
     
