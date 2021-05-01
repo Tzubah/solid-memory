@@ -35,12 +35,14 @@ class User:
         self.gender = gender
         self.location = loc
         self.preference = pref
-        #self.age_range = age_range
+        self.age_range = age_range
         self.hobbies = hob
         
     def __str__(self):
-        # Formats hobbies to be printed line by line
-        hob_list = ""
+        print(f"\n\nName: {self.first_name} {self.la
+        for hob in hobbies:
+            print(hob)
+            hob_list = ""
         for hob in hobbies:
             hob_list += "\t" + hob + "\n"
         
