@@ -1,0 +1,14 @@
+# Gender
+gender=input("Gender(M/F):").strip().lower()
+if gender=='m' or gender=='f'
+  break
+  print("Invalid input.Choose between M/F,")
+
+
+  # Preferences
+  While 1:
+    pref=input("Preferences(M/F/B):").strip().lower()
+    if pref=='m' or pref=='f' or pref=='b'
+      break
+      print("Enter valid preference)
+
