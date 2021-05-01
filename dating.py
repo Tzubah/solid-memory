@@ -121,8 +121,10 @@ class Database():
                     
                     # Prevents duplicate usernames
                     if self.users.get(u[0]) == None:
-                        hob = u[8].strip().split("; ")
-                        self.add_user(u[0],u[1],u[2],u[3],u[4],u[5],u[6],u[7],hob)                   
+                        hob = u[11].strip().split("; ")
+                        loc = f"{u[5]}, {u[6]}, {u[7]} {u[8]}"
+                        self.add_user(u[0],u[1],u[2],u[3],u[4],
+                                      loc,u[9],u[10],hob)                   
         
     def add_user(self,u_name,pwd,f_name,l_name,age,loc,gender,pref,hob):
         """Processes demographic information to add user to database
