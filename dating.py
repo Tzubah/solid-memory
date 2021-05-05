@@ -226,10 +226,20 @@ def create_profile(db):
     age = (datetime.date.today() - dob).days // 365
     
     # Gender - SOMEONE DO THIS
-    gender = "M"
+    # gender = "M"
+    while True:
+        gender=input("\nEnter your gender (M/F): ").strip().lower()
+        if gender=='m' or gender=='f':
+            break
+        print("Invalid input. Choose between M/F")
     
     # Preference - SOMEONE DO THIS
-    pref = "F"
+    #pref = "F"
+    while 1:
+        pref=input("\nEnter your partner preference (M/F/B):").strip().lower()
+        if pref=='m' or pref=='f' or pref=='b':
+            break
+        print("Invalid input. Choose between M/F/B")
     
     # Hobbies - SOMEONE DO THIS
     hob = []
@@ -288,21 +298,30 @@ def login(db):
     
     return user[-1]
     
-                                             
-def logout():
-    user.delete(curr_user)
-    print("You have been logged out successfully"):
-return User 
-                                             
-    """Clears the current user
+    
+#def logout():
+#    """Clears the current user
+#    
+#    Side effects:
+#        clears the global variable for current user
+#    """
+    
+def view_pending(user):
+    """Goes through user's pending matches to accept/reject
     
     Side effects:
-        clears the global variable for current user
+        prints prompts and user profiles to console
     """
-    user.delete(curr_user)
-    print("You have been logged out sucessfully")
-    return User
     
+def view_matches(user):
+    """Goes through user's accepted matches
+    """
+    
+def browse_users(user):
+    """Goes through non-matched users who match user's preference, sorted by
+        distance
+    """
+
 def main(user_list=None):
     """Runs the dating app program
     """
