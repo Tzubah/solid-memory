@@ -12,6 +12,7 @@ class User:
         rejected_matches (set of usernames)
         pending_matches (set of usernames): list of requested matches
         new_matches (boolean): indicates new matches upon login
+        username (str): account username
         first_name (str): user's first name
         last_name (str): user's last name
         date_of_birth (Date): user's birthday
@@ -23,30 +24,32 @@ class User:
         hobbies (list of strings)
     """
     
-    def __init__(self, f_name, l_name, age, loc, gender, pref, hob):
+    def __init__(self, u_name, f_name, l_name, age, loc, gender, pref, hob):
         self.accepted_matches = set()
         self.rejected_matches = set()
         self.pending_matches = set()
         self.new_matches = False
         
-        self.first_name = f_name
-        self.last_name = l_name
+        self.username = u_name
+        self.first_name = f_name.title()
+        self.last_name = l_name.title()
         self.age = age
-        self.gender = gender
+        self.gender = gender.upper()
         self.location = loc
-        self.preference = pref
-        # self.age_range = age_range
-        self.hobbies = hob
+        self.preference = pref.upper()
+        self.hobbies = [h.capitalize() for h in hob]
+        
         
     def __str__(self):
         # Formats hobbies to be printed line by line
-        hob_list = ""
-        for hob in hobbies:
-            hob_list += "\t" + hob + "\n"
+        hob_list = ", ".join(self.hobbies)
+        #for hob in self.hobbies:
+        #    hob_list += "\t" + hob + "\n"
         
-        print(f"\n\nName: {self.first_name + ' ' + self.last_name}\t" + 
-              f"Age: {self.age}\t Gender: {self.gender}\t" + 
-              f"Preference: {self.preference}\nLikes:\n{hob_list}\n\n")
+        return (f"\n\n{self.username}\n" + 
+                f"Name: {self.get_name()}\t" + 
+                f"Age: {self.age}\t Gender: {self.gender}\t" + 
+                f"Preference: {self.preference}\nLikes: {hob_list}\n\n")
         
     def get_name(self):
         """Gets user's first and last name
@@ -111,10 +114,38 @@ class Database():
     Attributes:
         users (dict of tuples): username keys with tuple values of (password, 
             User)
+        df (DataFrame): stores and saves user profile information for future use
     """
     def __init__(self, filepath=None):
         self.users = dict()
+        self.df = pd.DataFrame({'Username':[],
+                                'Password': [],
+                                'First_Name': [],
+                                'Last_Name': [],
+                                'Age': [],
+                                'Street_Address': [],
+                                'City': [],
+                                'State': [],
+                                'Zipcode': [],
+                                'Gender': [],
+                                'Preference': [],
+                                'Hobbies': []})
         if (filepath):
+            existing = pd.read_csv(filepath, sep=",")
+            self.df = pd.concat([self.df, existing])
+            
+        for index, u in self.df.iterrows():
+            if self.users.get(u.Username) == None:
+                hob = u.Hobbies.strip().split("; ")
+                loc = (f"{u.Street_Address.title()}, {u.City.title()}" + 
+                       f", {u.State.upper()}, {u.Zipcode}")
+                self.add_user(u.Username.strip(), u.Password, 
+                              u.First_Name.strip().title(), 
+                              u.Last_Name.strip().title(),
+                              int(u.Age), loc, u.Gender.strip().upper(), 
+                              u.Preference.strip().upper(), hob)
+            
+        """ if (filepath):
             with open(filepath, "r", encoding="utf-8") as csv:
                 for line in csv:
                     u = line.strip().split(",")
@@ -124,7 +155,7 @@ class Database():
                         hob = u[11].strip().split("; ")
                         loc = f"{u[5]}, {u[6]}, {u[7]} {u[8]}"
                         self.add_user(u[0],u[1],u[2],u[3],u[4],
-                                      loc,u[9],u[10],hob)                   
+                                      loc,u[9],u[10],hob) """                   
         
     def add_user(self,u_name,pwd,f_name,l_name,age,loc,gender,pref,hob):
         """Processes demographic information to add user to database
@@ -146,9 +177,35 @@ class Database():
         Side effects:
             creates new User object and adds to database
         """
-        new_user = User(f_name,l_name,age,loc,gender,pref,hob)
+        new_user = User(u_name, f_name,l_name,age,loc,gender,pref,hob)
         self.users[u_name] = (pwd, new_user)
         return new_user
+    
+    def update_df(self, username, password, user):
+        """Updates DataFrame with new user information
+        
+        Args:
+            user (User): User to add to Dataframe
+            
+        Side effects:
+            see above
+        """
+        loc = user.location.split(", ")
+        print(loc)
+        hobbies = "; ".join(user.hobbies)
+        u_df = pd.DataFrame({'Username': [username],
+                'Password': [password],
+                'First_Name': user.first_name,
+                'Last_Name': user.last_name,
+                'Age': user.age,
+                'Street_Address': loc[0],
+                'City': loc[1],
+                'State': loc[2],
+                'Zipcode': loc[3],
+                'Gender': user.gender,
+                'Preference': user.preference,
+                'Hobbies': hobbies})
+        self.df = pd.concat([self.df, u_df])
               
         
 def create_profile(db):
@@ -168,11 +225,15 @@ def create_profile(db):
           "and at least one uppercase letter, number, "
           "and special character\n")
     
+    u_name_expr = r"""^\S+$"""
     while True:
-        u_name = input("Username: ")
-        if (db.users.get(u_name) != None):
-            print("That username already exists!")
-        else: break
+        u_name_input = re.search(u_name_expr, input("Username: "))
+        if (u_name_input):
+            u_name = u_name_input[0]
+            if (db.users.get(u_name) != None):
+                print("That username already exists!")
+            else: break
+        else: print("Invalid username")
     
     while True:
         pwd = input("Password: ")
@@ -185,8 +246,8 @@ def create_profile(db):
     
     # Name
     name_input = input("\nEnter your first and last name: ").split(" ")
-    l_name = name_input.pop()
-    f_name = " ".join(name_input)
+    l_name = name_input.pop().title()
+    f_name = " ".join(name_input).title()
     
     # Location/Address
     loc_expr = r"""(?xm)
@@ -200,16 +261,16 @@ def create_profile(db):
     while True:
         loc_input = re.search(loc_expr, input("\nAddress: "))
         if (loc_input):
-            loc = (loc_input.group("address") + ", " + 
-                    loc_input.group("city") + ", " + 
-                    loc_input.group("state") +
+            loc = (loc_input.group("address").title() + ", " + 
+                    loc_input.group("city").title() + ", " + 
+                    loc_input.group("state").upper() + ", " +
                     loc_input.group("zipcode"))
             break
         else:
             print("Invalid address format")
             
     # Age/Date of Birth
-    dob_expr = r"(?P<month>\d{2})/(?P<day>\d{2})/(?P<year>\d{4})"
+    dob_expr = r"(?P<month>\d{1,2})/(?P<day>\d{1,2})/(?P<year>\d{4})"
     print("\nEnter your date of birth as MM/DD/YYYY")
     while True:
         dob_input = re.search(dob_expr, input("\nDate of Birth: "))
@@ -228,23 +289,27 @@ def create_profile(db):
     # Gender - SOMEONE DO THIS
     # gender = "M"
     while True:
-        gender=input("\nEnter your gender (M/F): ").strip().lower()
-        if gender=='m' or gender=='f':
+        gender=input("\nEnter your gender (M/F): ").strip().upper()
+        if gender=='M' or gender=='F':
             break
         print("Invalid input. Choose between M/F")
     
     # Preference - SOMEONE DO THIS
     #pref = "F"
     while 1:
-        pref=input("\nEnter your partner preference (M/F/B):").strip().lower()
-        if pref=='m' or pref=='f' or pref=='b':
+        pref=input("\nEnter your partner preference (M/F/B):").strip().upper()
+        if pref=='M' or pref=='F' or pref=='B':
             break
         print("Invalid input. Choose between M/F/B")
     
     # Hobbies - SOMEONE DO THIS
-    hob = []
+    hob_input = input("\nEnter some of your hobbies, separated by semi-colons (e.g. Bowling; Guitar; etc...)\n")
+    hob = hob_input.strip().split("; ")
     
-    return db.add_user(u_name,pwd,f_name,l_name,age,loc,gender,pref,hob)
+    new_user = db.add_user(u_name,pwd,f_name,l_name,age,loc,gender,pref,hob)
+    db.update_df(u_name, pwd, new_user)
+    print("\nYour account has been created!")
+    return new_user
     
     
 
@@ -327,36 +392,56 @@ def main(user_list=None):
     """
     db = Database(user_list)
     curr_user = None
-    u_command = ""
     
     # Welcome screen - login, register, or exit
-    print("\n\n\n---WELCOME TO THE INST326 CONSOLE DATING APP!---")
-    while (u_command not in ['login','register','quit']):
-        print("\n'login' - log in to your account" + 
-                "\n'register' - create a new account" + 
-                "\n'quit' - exits program")
+    while True:
+        u_command = ""
+        if curr_user == None:
+            print("\n\n\n---WELCOME TO THE INST326 CONSOLE DATING APP!---")
+            
+            while (u_command not in ['login','register','quit']):
+                print("\n'login' - log in to your account" + 
+                        "\n'register' - create a new account" + 
+                        "\n'quit' - exits program")
+                
+                u_command = input().strip().lower()
+                if u_command == 'login':
+                    curr_user = login(db)
+                    break
+                if u_command == 'register':
+                    curr_user = create_profile(db)
+                    break
+                if u_command == 'quit':
+                    db.df.to_csv('updated_users.csv')
+                    return
+            
+            u_command = ""
+            print(f"\n\nWelcome, {curr_user.get_name()}!" + 
+                ("You have new matches" if curr_user.new_matches else ""))
         
-        u_command = input().lower()
-        if u_command == 'login':
-            curr_user = login(db)
-            break
-        if u_command == 'register':
-            curr_user = create_profile(db)
-            break
-        if u_command == 'quit':
-            return
-    
-    u_command = ""
-    print(f"\n\nWelcome, {curr_user.get_name()}!" + 
-          ("You have new matches" if curr_user.new_matches else ""))
-    print("\n'quit' - exits program")
-    
-    # Main Menu - search, logout, exit
-    # THIS LOOP WILL INCLUDE ALL POSSIBLE USER COMMANDS FROM MAIN MENU
-    while (u_command not in ['quit']):
-        u_command = input().lower()
-        if u_command == 'quit':
-            return
+        # Main Menu - search, logout, exit
+        print("\nMAIN MENU" +
+              "\n'profile' - view your profile" +
+              "\n'matches' - view your accepted matches" +
+              "\n'browse' - browse users" +
+              "\n'logout' - log out of your account" +
+              "\n'quit' - exits program")
+        
+        # THIS LOOP WILL INCLUDE ALL POSSIBLE USER COMMANDS FROM MAIN MENU
+        while (u_command not in ['profile', 'logout', 'quit']):
+            u_command = input().strip().lower()
+            if u_command == 'profile':
+                view_user(curr_user)
+                continue
+            if u_command == 'logout':
+                curr_user = None
+                db.df.to_csv('updated_users.csv')
+                print('\nYou have been logged out successfully. Thank you!\n\n'
+                      + '------------------------------------------')
+                break
+            if u_command == 'quit':
+                db.df.to_csv('updated_users.csv')
+                return
     
 def parse_args(arglist):
     """Parse command-line arguments.
