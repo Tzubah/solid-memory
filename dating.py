@@ -288,8 +288,12 @@ def login(db):
     
     return user[-1]
     
-    
+                                             
 def logout():
+    user.delete(curr_user)
+    print("You have been logged out successfully"):
+return User 
+                                             
     """Clears the current user
     
     Side effects:
