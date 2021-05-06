@@ -129,9 +129,16 @@ class Database():
                                 'Zipcode': [],
                                 'Gender': [],
                                 'Preference': [],
-                                'Hobbies': []})
+                                'Hobbies': []}
+                               )#.set_index('Username', drop=False)
+        #print(self.df)
         if (filepath):
-            existing = pd.read_csv(filepath, sep=",")
+            #existing = pd.read_csv(filepath, sep=",")\
+            #    .set_index('Username', drop=True)
+            existing = pd.read_csv(filepath, sep=",")\
+                .drop_duplicates('Username')
+            #print(existing)
+            #existing.drop_duplicates('Username', inplace=True)
             self.df = pd.concat([self.df, existing])
             
         for index, u in self.df.iterrows():
@@ -181,20 +188,52 @@ class Database():
         self.users[u_name] = new_user
         return new_user
     
-    def update_df(self, username, password, user):
+    def update_df(self, username):
         """Updates DataFrame with new user information
         
         Args:
-            user (User): User to add to Dataframe
+            username (str): username of User to update in Dataframe
             
         Side effects:
             see above
         """
         user = self.users[username]
         loc = user.location.split(", ")
-        print(loc)
         hobbies = "; ".join(user.hobbies)
-        u_df = pd.DataFrame({'Username': [username],
+        
+        new_row = pd.Series(
+            {'Username': username,
+                'Password': user.password,
+                'First_Name': user.first_name,
+                'Last_Name': user.last_name,
+                'Age': user.age,
+                'Street_Address': loc[0],
+                'City': loc[1],
+                'State': loc[2],
+                'Zipcode': loc[3],
+                'Gender': user.gender,
+                'Preference': user.preference,
+                'Hobbies': hobbies}
+        )
+        if username not in self.df['Username'].values:
+            self.df = self.df.append(new_row, ignore_index=True)
+        else:
+            self.df[self.df["Username"] == username] = new_row
+            """self.df[self.df["Username"] == username] = pd.Series(
+                {'Username': username,
+                'Password': user.password,
+                'First_Name': user.first_name,
+                'Last_Name': user.last_name,
+                'Age': user.age,
+                'Street_Address': loc[0],
+                'City': loc[1],
+                'State': loc[2],
+                'Zipcode': loc[3],
+                'Gender': user.gender,
+                'Preference': user.preference,
+                'Hobbies': hobbies}
+        )"""
+        """u_df = pd.DataFrame({'Username': [username],
                 'Password': user.password,
                 'First_Name': user.first_name,
                 'Last_Name': user.last_name,
@@ -206,7 +245,7 @@ class Database():
                 'Gender': user.gender,
                 'Preference': user.preference,
                 'Hobbies': hobbies})
-        self.df = pd.concat([self.df, u_df])
+        self.df = pd.concat([self.df, u_df])"""
               
         
 def create_profile(db):
@@ -331,7 +370,7 @@ def create_profile(db):
         return None
     
     new_user = db.add_user(u_name,pwd,f_name,l_name,age,loc,gender,pref,hob)
-    db.update_df(u_name, pwd, new_user)
+    db.update_df(u_name)
     print("\nYour account has been created!\n")
     return new_user
     
@@ -443,7 +482,7 @@ def main(user_list=None):
                     curr_user = create_profile(db)
                     break
                 if u_command == 'quit':
-                    db.df.to_csv('updated_users.csv')
+                    db.df.to_csv('updated_users.csv', index=False)
                     return
             
             u_command = ""
@@ -467,12 +506,12 @@ def main(user_list=None):
                 continue
             if u_command == 'logout':
                 curr_user = None
-                db.df.to_csv('updated_users.csv')
+                db.df.to_csv('updated_users.csv', index=False)
                 print('\nYou have been logged out successfully. Thank you!\n\n'
                       + '------------------------------------------')
                 break
             if u_command == 'quit':
-                db.df.to_csv('updated_users.csv')
+                db.df.to_csv('updated_users.csv', index=False)
                 return
     
 def parse_args(arglist):
