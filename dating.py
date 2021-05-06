@@ -24,13 +24,14 @@ class User:
         hobbies (list of strings)
     """
     
-    def __init__(self, u_name, f_name, l_name, age, loc, gender, pref, hob):
+    def __init__(self,u_name, pwd, f_name, l_name, age, loc, gender, pref, hob):
         self.accepted_matches = set()
         self.rejected_matches = set()
         self.pending_matches = set()
         self.new_matches = False
         
         self.username = u_name
+        self.password = pwd
         self.first_name = f_name.title()
         self.last_name = l_name.title()
         self.age = age
@@ -112,8 +113,7 @@ class User:
 class Database():
     """A class representing the collection of Users in the dating app
     Attributes:
-        users (dict of tuples): username keys with tuple values of (password, 
-            User)
+        users (dict of Users): username keys with User values
         df (DataFrame): stores and saves user profile information for future use
     """
     def __init__(self, filepath=None):
@@ -177,8 +177,8 @@ class Database():
         Side effects:
             creates new User object and adds to database
         """
-        new_user = User(u_name, f_name,l_name,age,loc,gender,pref,hob)
-        self.users[u_name] = (pwd, new_user)
+        new_user = User(u_name,pwd,f_name,l_name,age,loc,gender,pref,hob)
+        self.users[u_name] = new_user
         return new_user
     
     def update_df(self, username, password, user):
@@ -190,11 +190,12 @@ class Database():
         Side effects:
             see above
         """
+        user = self.users[username]
         loc = user.location.split(", ")
         print(loc)
         hobbies = "; ".join(user.hobbies)
         u_df = pd.DataFrame({'Username': [username],
-                'Password': [password],
+                'Password': user.password,
                 'First_Name': user.first_name,
                 'Last_Name': user.last_name,
                 'Age': user.age,
@@ -382,14 +383,14 @@ def login(db):
             print("Username not found\n")
     user = db.users[username]        
     
-    while (password != user[0]):
+    while (password != user.password):
         password = input("Enter password: ")
         if password == "!back":
             return None
-        if (password != user[0]):
+        if (password != user.password):
             print("Incorrect password")
     
-    return user[-1]
+    return user
     
     
 #def logout():
