@@ -221,13 +221,18 @@ def create_profile(db):
         prints profile creation prompts to console
     """
     print("\n---REGISTRATION---")
+    print("Enter '!back' at any time to return to the menu")
     print("\nCreate a new username and a password with 6 or more characters, " +
           "and at least one uppercase letter, number, "
           "and special character\n")
     
     u_name_expr = r"""^\S+$"""
     while True:
-        u_name_input = re.search(u_name_expr, input("Username: "))
+        i = input("Username: ")
+        if i == "!back":
+            return None
+        
+        u_name_input = re.search(u_name_expr, i)
         if (u_name_input):
             u_name = u_name_input[0]
             if (db.users.get(u_name) != None):
@@ -237,6 +242,8 @@ def create_profile(db):
     
     while True:
         pwd = input("Password: ")
+        if pwd == "!back":
+            return None
         # ***NEEDS TO CHECK FOR PASSWORD REQUIREMENTS (maybe regex)***
         # else:
         break
@@ -246,6 +253,8 @@ def create_profile(db):
     
     # Name
     name_input = input("\nEnter your first and last name: ").split(" ")
+    if name_input[-1].strip() == "!back":
+        return None
     l_name = name_input.pop().title()
     f_name = " ".join(name_input).title()
     
@@ -259,7 +268,11 @@ def create_profile(db):
     print("\nEnter your address as the following fields separated by commas:\n\t" +
           "Street Address, City, State, Zipcode")
     while True:
-        loc_input = re.search(loc_expr, input("\nAddress: "))
+        i = input("\nAddress: ")
+        if i == "!back":
+            return None
+        
+        loc_input = re.search(loc_expr, i)
         if (loc_input):
             loc = (loc_input.group("address").title() + ", " + 
                     loc_input.group("city").title() + ", " + 
@@ -273,7 +286,11 @@ def create_profile(db):
     dob_expr = r"(?P<month>\d{1,2})/(?P<day>\d{1,2})/(?P<year>\d{4})"
     print("\nEnter your date of birth as MM/DD/YYYY")
     while True:
-        dob_input = re.search(dob_expr, input("\nDate of Birth: "))
+        i = input("\nDate of Birth: ")
+        if i == "!back":
+            return None
+        
+        dob_input = re.search(dob_expr, i)
         if (dob_input):
             try: 
                 dob = datetime.date(int(dob_input.group("year")), 
@@ -290,6 +307,8 @@ def create_profile(db):
     # gender = "M"
     while True:
         gender=input("\nEnter your gender (M/F): ").strip().upper()
+        if gender == "!BACK":
+            return None
         if gender=='M' or gender=='F':
             break
         print("Invalid input. Choose between M/F")
@@ -298,6 +317,8 @@ def create_profile(db):
     #pref = "F"
     while 1:
         pref=input("\nEnter your partner preference (M/F/B):").strip().upper()
+        if pref == "!BACK":
+            return None
         if pref=='M' or pref=='F' or pref=='B':
             break
         print("Invalid input. Choose between M/F/B")
@@ -305,10 +326,12 @@ def create_profile(db):
     # Hobbies - SOMEONE DO THIS
     hob_input = input("\nEnter some of your hobbies, separated by semi-colons (e.g. Bowling; Guitar; etc...)\n")
     hob = hob_input.strip().split("; ")
+    if hob[-1] == "!back":
+        return None
     
     new_user = db.add_user(u_name,pwd,f_name,l_name,age,loc,gender,pref,hob)
     db.update_df(u_name, pwd, new_user)
-    print("\nYour account has been created!")
+    print("\nYour account has been created!\n")
     return new_user
     
     
@@ -350,14 +373,19 @@ def login(db):
     username = ""
     password = ""
     print("\n---LOGIN---")
+    print("\nEnter your login credentials, or '!back' to return to the menu")
     while (db.users.get(username) == None):
         username = input("Enter username: ")
+        if username == "!back":
+            return None
         if (db.users.get(username) == None):
             print("Username not found\n")
     user = db.users[username]        
     
     while (password != user[0]):
         password = input("Enter password: ")
+        if password == "!back":
+            return None
         if (password != user[0]):
             print("Incorrect password")
     
@@ -396,13 +424,15 @@ def main(user_list=None):
     # Welcome screen - login, register, or exit
     while True:
         u_command = ""
-        if curr_user == None:
+        while curr_user == None:
             print("\n\n\n---WELCOME TO THE INST326 CONSOLE DATING APP!---")
-            
-            while (u_command not in ['login','register','quit']):
-                print("\n'login' - log in to your account" + 
+            print("\n'login' - log in to your account" + 
                         "\n'register' - create a new account" + 
                         "\n'quit' - exits program")
+            
+            while (u_command not in ['login','register','quit'] 
+                   or curr_user == None):
+
                 
                 u_command = input().strip().lower()
                 if u_command == 'login':
@@ -416,11 +446,12 @@ def main(user_list=None):
                     return
             
             u_command = ""
-            print(f"\n\nWelcome, {curr_user.get_name()}!" + 
-                ("You have new matches" if curr_user.new_matches else ""))
+            if curr_user:
+                print(f"\n\nWelcome, {curr_user.get_name()}!" + 
+                    ("You have new matches" if curr_user.new_matches else ""))
         
         # Main Menu - search, logout, exit
-        print("\nMAIN MENU" +
+        print("\n---MAIN MENU---" +
               "\n'profile' - view your profile" +
               "\n'matches' - view your accepted matches" +
               "\n'browse' - browse users" +
