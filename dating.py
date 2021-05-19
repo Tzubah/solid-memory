@@ -439,6 +439,12 @@ def login(db):
 #        clears the global variable for current user
 #    """
     
+def view_profile(db, user):
+    """Screen for user to view, edit, and delete their profile
+    """
+    #while True:
+    #    u_command = ""
+
 def view_pending(user):
     """Goes through user's pending matches to accept/reject
     
