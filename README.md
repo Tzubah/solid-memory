@@ -58,9 +58,31 @@
    follows the format described in the [Files](#files) section above
 
 ### How to use the program
-   - 
-
-### How to run any tests you have written for your software
-   - 
+   - *Note: entering '!back' at any prompt should take you back to the main menu
+   - Logging in
+      * Enter 'login' to log into an existing user's account
+      * Enter 'register' and closely follow on-screen prompts to create a new account
+      * Enter 'quit' to exit the program entirely
+   - Browsing for users
+      * Enter 'browse' from the main menu to enter the browsing screen
+      * Users will be printed in groups of 5 for you to request matches
+         * These users will match your sexual preference, and be listed in 
+            increasing order by distance
+         * You can select a user to request match using 1-5
+            * Each number from 1-5 will correspond with one user currently being displayed
+         * You can navigate forwards 5 users with 'next'
+         * You can navigate backwards 5 users with 'prev'
+   - Saving the User Database
+      * Creating a new profile, logging out, and quitting the program will save the 
+         current state of the Database's Dataframe to `updated_users.csv` for future use
    
+
 ### A clear set of expectations around known bugs and a road-map for future development.
+#### Future Work:
+   * Functionality for saving matches to future instances of the program
+   * Functionality for updating user's profile information
+   * Functionality for searching users by keyword
+   * request_match(), confirm_match(), view_pending(), view_matches()
+   * Finishing browse_users() function
+   * Checking if an address is valid before adding User to Database
+   * Overall bug testing with Pytests
