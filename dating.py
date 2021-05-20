@@ -402,7 +402,7 @@ def search_keyword(keyword):
 def login(db):
     """Sets the current user
     Args:
-        db ()
+        db (Database): the collection of existing users
     
     Returns: 
         User: current user
@@ -431,14 +431,6 @@ def login(db):
             print("Incorrect password")
     
     return user
-    
-    
-#def logout():
-#    """Clears the current user
-#    
-#    Side effects:
-#        clears the global variable for current user
-#    """
     
 def view_profile(db, user):
     """Screen for user to view, edit, and delete their profile
