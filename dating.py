@@ -85,14 +85,14 @@ class User:
             or rejected_matches, sets match's new_match attribute to 
             True if accepted
         """
-        if match is True:
-            match = new_match
-        else:
-            match = (input("Accept or Reject: "))
-        if match.username = self.accepted_matches: 
-            print("Match accepted")
-        else:
-            print("Match rejected")
+        #if match is True:
+        #    match = new_match
+        #else:
+        #    match = (input("Accept or Reject: "))
+        #if match.username == self.accepted_matches: 
+        #    print("Match accepted")
+        #else:
+        #    print("Match rejected")
         
     def request_match(self, match):
         """Sends another user a request for a match
@@ -106,10 +106,10 @@ class User:
         Side effects:
             on-screen prompt reflecting success of request
         """
-        if self.username = match.pending_matches:
-            request_match
-        else:
-            print("Request Sent")
+        #if self.username == match.pending_matches:
+        #    request_match
+        #else:
+        #   print("Request Sent")
             
 class Database():
     """A class representing the collection of Users in the dating app
