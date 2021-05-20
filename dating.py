@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 import re
 from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
 import datetime
 
 class User:
@@ -47,7 +48,7 @@ class User:
         #for hob in self.hobbies:
         #    hob_list += "\t" + hob + "\n"
         
-        return (f"\n\n{self.username}\n" + 
+        return (f"{self.username}\n" + 
                 f"Name: {self.get_name()}\t" + 
                 f"Age: {self.age}\t Gender: {self.gender}\t" + 
                 f"Preference: {self.preference}\nLikes: {hob_list}\n\n")
@@ -59,18 +60,6 @@ class User:
             str: user's first and last name
         """
         return f"{self.first_name} {self.last_name}"
-        
-    
-    def distance_from_match(self, match):
-        """Calculates the distance between this user and the match's location
-        
-        Args:
-            match (User): potential match
-            
-        Returns:
-            float: distance between this user and the match's location
-        """
-        
     
     #def age_match(self, match):
     #    """Checks if matched user fits within the preferred age_range
@@ -145,7 +134,7 @@ class Database():
             if self.users.get(u.Username) == None:
                 hob = u.Hobbies.strip().split("; ")
                 loc = (f"{u.Street_Address.title()}, {u.City.title()}" + 
-                       f", {u.State.upper()}, {u.Zipcode}")
+                       f", {u.State.upper()}, {str(u.Zipcode)[:5]}")
                 self.add_user(u.Username.strip(), u.Password, 
                               u.First_Name.strip().title(), 
                               u.Last_Name.strip().title(),
@@ -288,15 +277,16 @@ def create_profile(db):
         # else:
         break
     
-    # PROMPT AND CHECK FOR PROPER DEMOGRAPHIC INFO, INCLUDING
-    # INPUT FOR HOBBIES ONE AT A TIME
-    
     # Name
-    name_input = input("\nEnter your first and last name: ").split(" ")
-    if name_input[-1].strip() == "!back":
-        return None
-    l_name = name_input.pop().title()
-    f_name = " ".join(name_input).title()
+    while True:
+        name_input = input("\nEnter your first and last name: ").split(" ")
+        if name_input[-1].strip() == "!back":
+            return None
+        if len(name_input) < 2:
+            continue
+        l_name = name_input.pop().title()
+        f_name = " ".join(name_input).title()
+        break
     
     # Location/Address
     loc_expr = r"""(?xm)
@@ -343,8 +333,7 @@ def create_profile(db):
             print("Invalid date")
     age = (datetime.date.today() - dob).days // 365
     
-    # Gender - SOMEONE DO THIS
-    # gender = "M"
+    # Gender
     while True:
         gender=input("\nEnter your gender (M/F): ").strip().upper()
         if gender == "!BACK":
@@ -353,8 +342,7 @@ def create_profile(db):
             break
         print("Invalid input. Choose between M/F")
     
-    # Preference - SOMEONE DO THIS
-    #pref = "F"
+    # Preference
     while 1:
         pref=input("\nEnter your partner preference (M/F/B):").strip().upper()
         if pref == "!BACK":
@@ -363,7 +351,7 @@ def create_profile(db):
             break
         print("Invalid input. Choose between M/F/B")
     
-    # Hobbies - SOMEONE DO THIS
+    # Hobbies
     hob_input = input("\nEnter some of your hobbies, separated by semi-colons (e.g. Bowling; Guitar; etc...)\n")
     hob = hob_input.strip().split("; ")
     if hob[-1] == "!back":
@@ -371,6 +359,7 @@ def create_profile(db):
     
     new_user = db.add_user(u_name,pwd,f_name,l_name,age,loc,gender,pref,hob)
     db.update_df(u_name)
+    db.df.to_csv('updated_users.csv', index=False)
     print("\nYour account has been created!\n")
     return new_user
     
@@ -385,7 +374,7 @@ def view_user(user):
     Side efects:
         prints user's demographic attributes to console
     """
-    print(user)
+    print('\n' + user)
     
 def search_keyword(keyword):
     """Searches user profiles for attributes containing keyword input
@@ -455,14 +444,101 @@ def view_pending(user):
 def view_matches(user):
     """Goes through user's accepted matches
     """
-    
-def browse_users(user):
+ 
+def distance_from_match(user, match):
+        """Calculates the distance between this user and the match's location
+        
+        Args:
+            user (User): current user to use for location comparison
+            match (User): potential match
+            
+        Returns:
+            float: distance between this user and the match's location
+        """
+        geolocator = Nominatim(user_agent='INST326 Group 4 Dating App')
+        user_loc = geolocator.geocode(user.location)
+        match_loc = geolocator.geocode(match.location)
+        return round(geodesic((user_loc.latitude,user_loc.longitude), 
+                        (match_loc.latitude,match_loc.longitude)).miles,1)
+        
+           
+def browse_users(db, curr_user):
     """Goes through non-matched users who match user's preference, sorted by
         distance
+        
+        Args:
+            db (Database): collection of all users
+            curr_user (User): current user
+            
+        Side effects:
+            prints list of user profile views to console
     """
-
+    sorted_users = [db.users[u] for u in db.users if u not in \
+                    curr_user.accepted_matches|curr_user.rejected_matches \
+                    and curr_user != db.users[u]
+                    and (curr_user.preference == 'B' or 
+                         curr_user.preference == db.users[u].gender)]
+    sorted_users = sorted(sorted_users, key= lambda u: 
+                                            distance_from_match(curr_user, u))
+    
+    list_max = len(sorted_users)
+    curr_view = []
+    curr_index = 0
+    count = 1
+    print('\n\n')
+    while count <= 5 and (curr_index < list_max and curr_index >= 0):
+        pulled = sorted_users[curr_index]
+        curr_view.append(pulled)
+        print(f'[{count}] ' + 
+              f'{distance_from_match(curr_user, pulled)} ' +
+              f'miles away\n{pulled}')
+        count += 1
+        curr_index += 1
+        
+    while True:
+        print("\n---BROWSE---" +
+                "\n'1-5' - request match with user" +
+                "\n'prev' - display prev 5 users" +
+                "\n'next' - display next 5 users" +
+                "\n'!back' - return to main menu")
+        
+        u_command = ""
+        while u_command not in ['1','2','3','4','5','prev','next','!back']:
+            u_command = input().strip().lower()
+            
+            if u_command in ['1','2','3','4','5'] and int(u_command) < len(curr_view):
+                curr_user.request_match(curr_view[int(u_command)])
+            
+            # needs to be finished
+            elif u_command == 'prev':
+                break
+            
+            elif u_command == 'next':
+                curr_view = []
+                count = 1
+                while count <= 5 and (curr_index < list_max and curr_index >= 0):
+                    pulled = sorted_users[curr_index]
+                    curr_view.append(pulled)
+                    print(f'[{count}] ' + 
+                        f'{distance_from_match(curr_user, pulled)} ' +
+                        f'miles away\n{pulled}\n\n')
+                    count += 1
+                    curr_index += 1
+                break
+            
+            elif u_command == '!back':
+                return
+        
+    
+    
 def main(user_list=None):
     """Runs the dating app program
+    
+    Args:
+        user_list (str): filepath to csv of existing user database
+        
+    Side effects:
+        prints user prompts to console
     """
     db = Database(user_list)
     curr_user = None
@@ -505,10 +581,14 @@ def main(user_list=None):
               "\n'quit' - exits program")
         
         # THIS LOOP WILL INCLUDE ALL POSSIBLE USER COMMANDS FROM MAIN MENU
-        while (u_command not in ['profile', 'logout', 'quit']):
+        while (u_command not in ['profile','browse','logout','quit']):
             u_command = input().strip().lower()
             if u_command == 'profile':
+                print('\n---MY PROFILE---')
                 view_user(curr_user)
+                continue
+            if u_command == 'browse':
+                browse_users(db, curr_user)
                 continue
             if u_command == 'logout':
                 curr_user = None
